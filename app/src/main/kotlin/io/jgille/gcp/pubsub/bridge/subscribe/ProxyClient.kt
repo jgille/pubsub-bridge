@@ -14,10 +14,11 @@ import org.apache.http.message.BasicHeader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.Closeable
 import java.nio.charset.Charset
 import javax.annotation.PreDestroy
 
-interface ProxyClient : java.io.Closeable {
+interface ProxyClient : Closeable {
 
     fun proxyMessage(message: PubsubMessage)
 

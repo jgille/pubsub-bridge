@@ -40,18 +40,12 @@ class PublishingDispatcher(private val path: String, val publisher: Publisher) {
             publisher.publish(message).get()
             logger.info("Message published")
         } catch (e: ExecutionException) {
-            val cause = e.cause
-            if (cause is UnavailableException) {
-                throw TemporaryDispatchException(cause)
-            }
-            throw cause ?: e
-        } catch (e: TimeoutException) {
-            throw TemporaryDispatchException(e)
+            throw TemporaryDispatchException(e.cause ?: e)
         }
     }
 }
 
-class TemporaryDispatchException(cause: Exception): RuntimeException(cause)
+class TemporaryDispatchException(cause: Throwable) : RuntimeException(cause)
 
 @Component
 class DispatcherLifecycleManager(private val properties: PublishProperties,
