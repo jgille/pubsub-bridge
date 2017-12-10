@@ -6,9 +6,13 @@ This decouples your service from the specifics of the transportation layer, whic
 
 ## Running locally
 
+```
 ./gradlew build
 docker-compose build
 docker-compose up
+```
 
 ## Run the tests
+```
 ./gradlew blackbox-test
+```
