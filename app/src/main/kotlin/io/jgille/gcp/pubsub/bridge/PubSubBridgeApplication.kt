@@ -6,6 +6,8 @@ import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.*
 import com.google.pubsub.v1.SubscriptionName
 import com.google.pubsub.v1.TopicName
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.jgille.gcp.pubsub.bridge.admin.PubSubAdminClient
 import io.jgille.gcp.pubsub.bridge.config.PubSubProperties
 import io.jgille.gcp.pubsub.bridge.config.PublishProperties
@@ -13,6 +15,7 @@ import io.jgille.gcp.pubsub.bridge.config.SubscribeProperties
 import io.jgille.gcp.pubsub.bridge.logging.LoggingConfiguration
 import io.jgille.gcp.pubsub.bridge.publish.PubSubDispatcherServlet
 import io.jgille.gcp.pubsub.bridge.publish.PublishingDispatcher
+import io.jgille.gcp.pubsub.bridge.publish.PublishingDispatcherImpl
 import io.jgille.gcp.pubsub.bridge.subscribe.CloseableProxyClient
 import io.jgille.gcp.pubsub.bridge.subscribe.ProxyClientsLifecycleManager
 import io.jgille.gcp.pubsub.bridge.subscribe.ProxyMessageReceiver
@@ -115,12 +118,20 @@ open class PubSubBridgeApplication {
                     .setMaxRpcTimeout(Duration.ofSeconds(10))
                     .build()
 
-            PublishingDispatcher(path,
-                    Publisher.newBuilder(topicName)
-                            .setChannelProvider(channelProvider)
-                            .setCredentialsProvider(credentialsProvider)
-                            .setRetrySettings(retrySettings)
+            val publisher = Publisher.newBuilder(topicName)
+                    .setChannelProvider(channelProvider)
+                    .setCredentialsProvider(credentialsProvider)
+                    .setRetrySettings(retrySettings)
+                    .build()
+            // TODO: Make this configurable
+            val circuitBreaker = CircuitBreaker.of(it.path,
+                    CircuitBreakerConfig.custom()
+                            .ringBufferSizeInClosedState(100)
+                            .ringBufferSizeInHalfOpenState(10)
+                            .failureRateThreshold(100f)
+                            .waitDurationInOpenState(java.time.Duration.ofSeconds(60))
                             .build())
+            PublishingDispatcherImpl(path, publisher).protectedWith(circuitBreaker)
         }
     }
 

@@ -1,16 +1,15 @@
 package io.jgille.gcp.pubsub.bridge.publish
 
-import com.google.api.gax.rpc.UnavailableException
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.PubsubMessage
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.jgille.gcp.pubsub.bridge.admin.PubSubAdminClient
 import io.jgille.gcp.pubsub.bridge.config.PublishProperties
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeoutException
 import javax.annotation.PostConstruct
 
 @Component
@@ -22,15 +21,22 @@ class PublishingDispatchers(private val dispatchers: List<PublishingDispatcher>)
 
 }
 
-class PublishingDispatcher(private val path: String, val publisher: Publisher) {
+interface PublishingDispatcher {
+    fun dispatch(body: ByteArray, attributes: Map<String, String>)
+
+    fun handles(path: String): Boolean
+}
+
+class PublishingDispatcherImpl(private val path: String,
+                           private val publisher: Publisher): PublishingDispatcher {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-    fun handles(otherPath: String): Boolean {
-        return PathMatcher.pathMatch(path, otherPath)
+    override fun handles(path: String): Boolean {
+        return PathMatcher.pathMatch(this.path, path)
     }
 
-    fun dispatch(body: ByteArray, attributes: Map<String, String>) {
+    override fun dispatch(body: ByteArray, attributes: Map<String, String>) {
         logger.info("Publishing message to ${publisher.topicName.topic}")
         val message = PubsubMessage.newBuilder().setData(ByteString.copyFrom(body))
                 .putAllAttributes(attributes)
@@ -41,6 +47,25 @@ class PublishingDispatcher(private val path: String, val publisher: Publisher) {
             logger.info("Message published")
         } catch (e: ExecutionException) {
             throw TemporaryDispatchException(e.cause ?: e)
+        }
+    }
+
+    fun protectedWith(circuitBreaker: CircuitBreaker): ProtectedPublishingDispatcher {
+        return ProtectedPublishingDispatcher(this, circuitBreaker)
+    }
+
+}
+
+class ProtectedPublishingDispatcher(private val dispatcher: PublishingDispatcher,
+                                    private val circuitBreaker: CircuitBreaker): PublishingDispatcher {
+
+    override fun handles(path: String): Boolean {
+        return dispatcher.handles(path)
+    }
+
+    override fun dispatch(body: ByteArray, attributes: Map<String, String>) {
+        return circuitBreaker.executeSupplier {
+            dispatcher.dispatch(body, attributes)
         }
     }
 }

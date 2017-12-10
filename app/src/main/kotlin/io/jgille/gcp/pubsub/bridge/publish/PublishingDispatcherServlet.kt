@@ -1,5 +1,6 @@
 package io.jgille.gcp.pubsub.bridge.publish
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerOpenException
 import io.jgille.gcp.pubsub.bridge.http.Headers
 import io.jgille.gcp.pubsub.bridge.http.HttpHeader
 import org.apache.http.HttpStatus
@@ -18,14 +19,14 @@ class PubSubDispatcherServlet(private val dispatchers: PublishingDispatchers) : 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     override fun service(req: ServletRequest, res: ServletResponse) {
-        logger.info("Handling request")
-
         val httpRequest = req as HttpServletRequest
         val httpResponse = res as HttpServletResponse
 
         httpResponse.contentType = "application/json"
 
         val path = httpRequest.requestURI!!
+
+        logger.info("Handling request on $path")
 
         val dispatcher = dispatchers.forPath(path)
 
@@ -49,6 +50,9 @@ class PubSubDispatcherServlet(private val dispatchers: PublishingDispatchers) : 
             dispatcher.dispatch(body, attributes)
         } catch (e: TemporaryDispatchException) {
             logger.warn("Failed to publish message, could be a temporary glitch", e)
+            httpResponse.status = HttpStatus.SC_SERVICE_UNAVAILABLE
+        } catch (e: CircuitBreakerOpenException) {
+            logger.warn("A circuit breaker is open", e)
             httpResponse.status = HttpStatus.SC_SERVICE_UNAVAILABLE
         } catch (e: Exception) {
             logger.error("Failed to publish message", e)
