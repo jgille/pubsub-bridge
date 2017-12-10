@@ -1,0 +1,33 @@
+pubSub:
+  emulator: pubsub:8538
+  projectId: sample-project
+
+subscribe:
+  defaultConcurrency: 2
+
+  subscriptions:
+    - topic: cat_topic
+      subscription: cat_subscription
+      concurrency: 1
+      proxyTo:
+        url: http://mock-server:1080/cats/events/{attribute:event_type}
+        connectTimeout: 5000
+        connectionRequestTimeout: 2000
+        socketTimeout: 5000
+        headers:
+          - name: Api-Key
+            value: key
+
+publish:
+  rootPath: /dispatch
+  defaultTimeout: 10000
+
+  publishers:
+    - path: /dogs
+      topic: dog_topic
+      timeout: 20000
+
+management:
+  port: 8081
+  security:
+    enabled: false

@@ -1,0 +1,20 @@
+version: "3"
+services:
+  bridge:
+    build: app
+    ports:
+     - "8080:8080"
+    links:
+      - pubsub:pubsub
+      - mock-server:mock-server
+
+  pubsub:
+    image: google/cloud-sdk:178.0.0
+    command: gcloud beta emulators pubsub start --host-port 0.0.0.0:8538
+    ports:
+     - "8538:8538"
+
+  mock-server:
+     image: jamesdbloom/mockserver
+     ports:
+      - "1080:1080"

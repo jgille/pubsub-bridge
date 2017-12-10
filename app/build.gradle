@@ -1,0 +1,31 @@
+apply plugin: 'org.springframework.boot'
+apply plugin: 'application'
+
+jar {
+    manifest {
+        attributes(
+                "Main-Class": "io.jgille.gcp.pubsub.bridge.PubSubBridgeApplication"
+        )
+    }
+}
+
+dependencies {
+    compile "org.springframework.boot:spring-boot-starter-jetty:$springBootVersion",
+            "org.springframework.boot:spring-boot-actuator:$springBootVersion",
+            "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7",
+            "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion",
+            "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
+            "com.google.cloud:$pubSubSdkVersion"
+
+    compile("org.springframework.boot:spring-boot-starter-web:$springBootVersion") {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
+
+    testCompile 'cglib:cglib-nodep:3.2.4',
+            'com.github.tomakehurst:wiremock:2.11.0'
+
+}
+
+springBoot {
+    mainClass = 'io.jgille.gcp.pubsub.bridge.PubSubBridgeApplication'
+}

@@ -1,0 +1,14 @@
+dependencies {
+    testCompile "org.codehaus.groovy:groovy-all:$groovyVersion",
+            'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1',
+            'org.slf4j:slf4j-api:1.7.21',
+            'ch.qos.logback:logback-classic:1.1.7',
+            'org.mock-server:mockserver-netty:3.10.4',
+            "com.google.cloud:$pubSubSdkVersion"
+}
+
+task 'blackbox-test'(type: Test) {
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+}

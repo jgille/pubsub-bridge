@@ -1,0 +1,4 @@
+rootProject.name = 'pubsub-bridge'
+include 'app'
+include 'blackbox-test'
+
