@@ -2,6 +2,11 @@ pubSub:
   emulator: pubsub:8538
   projectId: sample-project
 
+logging:
+  mdc:
+   - attributeName: correlation-id
+     mdcPropertyName: Correlation-Id
+
 subscribe:
   defaultConcurrency: 2
 

@@ -10,6 +10,7 @@ import io.jgille.gcp.pubsub.bridge.admin.PubSubAdminClient
 import io.jgille.gcp.pubsub.bridge.config.PubSubProperties
 import io.jgille.gcp.pubsub.bridge.config.PublishProperties
 import io.jgille.gcp.pubsub.bridge.config.SubscribeProperties
+import io.jgille.gcp.pubsub.bridge.logging.LoggingConfiguration
 import io.jgille.gcp.pubsub.bridge.publish.PubSubDispatcherServlet
 import io.jgille.gcp.pubsub.bridge.publish.PublishingDispatcher
 import io.jgille.gcp.pubsub.bridge.subscribe.CloseableProxyClient
@@ -69,6 +70,7 @@ open class PubSubBridgeApplication {
     @Bean
     open fun proxySubscribers(pubSubProperties: PubSubProperties,
                               subscribeProperties: SubscribeProperties,
+                              loggingConfiguration: LoggingConfiguration,
                               channelProvider: TransportChannelProvider,
                               credentialsProvider: CredentialsProvider,
                               clientsLifecycleManager: ProxyClientsLifecycleManager): List<ProxySubscriber> {
@@ -78,7 +80,7 @@ open class PubSubBridgeApplication {
             clientsLifecycleManager.manage(client)
             val concurrency = it.concurrency ?: subscribeProperties.defaultConcurrency
             logger.info("Setting up subscriber ${it.subscription} with $concurrency parallel pulls")
-            val receiver = ProxyMessageReceiver(client)
+            val receiver = ProxyMessageReceiver(client, loggingConfiguration)
             val subscriber = Subscriber.newBuilder(subscriptionName, receiver)
                     .setCredentialsProvider(credentialsProvider)
                     .setChannelProvider(channelProvider)

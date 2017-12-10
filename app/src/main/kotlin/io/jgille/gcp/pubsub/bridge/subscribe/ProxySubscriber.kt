@@ -6,8 +6,10 @@ import com.google.cloud.pubsub.v1.Subscriber
 import com.google.pubsub.v1.PubsubMessage
 import io.jgille.gcp.pubsub.bridge.admin.PubSubAdminClient
 import io.jgille.gcp.pubsub.bridge.config.SubscribeProperties
+import io.jgille.gcp.pubsub.bridge.logging.LoggingConfiguration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
@@ -24,12 +26,17 @@ class ProxySubscriber(private val subscriber: Subscriber) {
 
 }
 
-class ProxyMessageReceiver(val client: ProxyClient) : MessageReceiver {
+class ProxyMessageReceiver(val client: ProxyClient, val loggingConfiguration: LoggingConfiguration) : MessageReceiver {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     override fun receiveMessage(message: PubsubMessage, consumer: AckReplyConsumer) {
         try {
+            message.attributesMap.forEach { key, value ->
+                loggingConfiguration.mdc.find { it.attributeName.equals(key, ignoreCase = true) }?.apply {
+                    MDC.put(mdcPropertyName ?: attributeName, value)
+                }
+            }
             client.proxyMessage(message)
             consumer.ack()
             logger.info("Message handled")
@@ -39,6 +46,8 @@ class ProxyMessageReceiver(val client: ProxyClient) : MessageReceiver {
         } catch (e: Throwable) {
             logger.error("Failed to handle message $message", e)
             consumer.ack()
+        } finally {
+            MDC.clear()
         }
     }
 

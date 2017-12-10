@@ -94,7 +94,7 @@ class SubscriberSpec extends Specification {
                 .withBody(message.data.toStringUtf8())
                 .withHeader("Content-Type", "application/json; charset=UTF-8")
                 .withHeader("x-message-attribute-event_type", message.getAttributesOrThrow("event_type"))
-                .withHeader("Correlation-Id", message.getAttributesOrThrow("correlation_id"))
+                .withHeader("Correlation-Id", message.getAttributesOrThrow("correlation-id"))
                 .withHeader("Api-Key", "key")
                 .withPath("/cats/events/${message.getAttributesOrThrow("event_type")}".toString())
     }
@@ -104,7 +104,7 @@ class SubscriberSpec extends Specification {
         return PubsubMessage.newBuilder()
                 .setData(ByteString.copyFrom(JsonOutput.toJson([breed: breed]), "UTF-8"))
                 .putAttributes("event_type", "dog_created")
-                .putAttributes("correlation_id", cid)
+                .putAttributes("correlation-id", cid)
                 .build()
     }
 }

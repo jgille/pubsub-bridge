@@ -93,6 +93,7 @@ class PublisherSpec extends Specification {
                         "X-Message-Attribute-aggregate_type": "DOG",
                         "X-Message-Attribute-event_type": "DOG_CREATED",
                         "X-Message-Attribute-event_id": eventId,
+                        "X-Message-Attribute-Correlation-Id": UUID.randomUUID().toString(),
                         "Foo": "Bar"
                 ])
 
@@ -109,7 +110,7 @@ class PublisherSpec extends Specification {
 
         and:
         def attributes = message.getAttributesMap()
-        attributes.size() == 3
+        attributes.size() == 4
         attributes.event_id == eventId
         attributes.event_type == "DOG_CREATED"
         attributes.aggregate_type == "DOG"
@@ -124,7 +125,9 @@ class PublisherSpec extends Specification {
         when:
         postMessage("/dispatch/cats",
                 [breed: "Maine Coon"],
-                [:])
+                [
+                        "X-Message-Attribute-Correlation-Id": UUID.randomUUID().toString()
+                ])
 
         then:
         def e = thrown(HttpResponseException)
@@ -138,6 +141,7 @@ class PublisherSpec extends Specification {
                 [
                         "X-Message-Attribute-aggregate_type": "DOG",
                         "X-Message-Attribute-event_type": "DOG_CREATED",
+                        "X-Message-Attribute-Correlation-Id": UUID.randomUUID().toString(),
                         "Foo": "Bar"
                 ])
 
