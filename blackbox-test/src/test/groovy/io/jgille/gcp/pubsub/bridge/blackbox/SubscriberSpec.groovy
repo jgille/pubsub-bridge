@@ -96,14 +96,14 @@ class SubscriberSpec extends Specification {
                 .withHeader("x-message-attribute-event_type", message.getAttributesOrThrow("event_type"))
                 .withHeader("Correlation-Id", message.getAttributesOrThrow("correlation-id"))
                 .withHeader("Api-Key", "key")
-                .withPath("/cats/events/${message.getAttributesOrThrow("event_type")}".toString())
+                .withPath("/cats/events/${message.getAttributesOrThrow("event_type")}".toLowerCase())
     }
 
     private static PubsubMessage newDog(String breed) {
         def cid = UUID.randomUUID().toString()
         return PubsubMessage.newBuilder()
                 .setData(ByteString.copyFrom(JsonOutput.toJson([breed: breed]), "UTF-8"))
-                .putAttributes("event_type", "dog_created")
+                .putAttributes("event_type", "DOG_CREATED")
                 .putAttributes("correlation-id", cid)
                 .build()
     }

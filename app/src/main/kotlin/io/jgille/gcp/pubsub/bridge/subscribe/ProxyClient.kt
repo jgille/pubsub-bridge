@@ -74,7 +74,7 @@ class CloseableProxyClient(val properties: ProxyProperties) : ProxyClient {
             val name = it.key
             url = url.replace("{attribute:$name}", it.value)
         }
-        return url
+        return url.toLowerCase()
     }
 
     private fun post(request: HttpPost) {
